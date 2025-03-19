@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "@discordjs/voice": "^0.17.0",
+    "@google-cloud/text-to-speech": "^5.4.0",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "google-tts-api": "^2.0.2",
+    "googleapis": "^140.0.1",
+    "libsodium-wrappers": "^0.7.14",
+    "math": "^0.0.3",
+    "mathjs": "^14.0.1",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.11.0",
+    "play-dl": "^1.9.7",
+    "random": "^5.1.1",
+    "youtube-dl-exec": "^3.0.7",
+    "ytdl-core": "^4.11.5",
+    "ytsr": "^3.8.4"
+  }
+}
