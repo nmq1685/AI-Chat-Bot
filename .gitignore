@@ -18,6 +18,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Local database
+data/bot.sqlite
+
 # Test and coverage output
 coverage/
 .nyc_output/

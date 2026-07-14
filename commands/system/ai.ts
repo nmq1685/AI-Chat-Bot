@@ -36,13 +36,13 @@ export default {
       userInput = interactionOrMessage.options.getString('content', true);
       await interactionOrMessage.deferReply();
       loadingMessage = await interactionOrMessage.editReply(
-        '<a:GTALoading:1338093657105895436> Đợi tí xíu nghennn...'
+        'Đợi tí xíu nghennn...'
       );
     } else {
       userInput = args?.join(' ') ?? '';
       if (!userInput) return interactionOrMessage.reply('Vui lòng nhập nội dung chat.');
       loadingMessage = await interactionOrMessage.reply(
-        '<a:GTALoading:1338093657105895436> Đợi tí xíu nghennn...'
+        'Đợi tí xíu nghennn...'
       );
     }
 
