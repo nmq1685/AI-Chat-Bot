@@ -1,5 +1,18 @@
 # AI-Chat-Bot
 
+## AI provider
+
+Lệnh `/chat` hỗ trợ OpenAI và Google Gemini. Chọn provider và model trong `.env`:
+
+```env
+AI_PROVIDER=google
+AI_MODEL=gemini-2.0-flash
+GOOGLE_API_KEY=your_google_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
+
+Đặt `AI_PROVIDER=openai` để dùng OpenAI; khi đó `AI_MODEL` phải là model OpenAI bạn muốn sử dụng, ví dụ `gpt-5`. Đặt `AI_PROVIDER=google` để dùng Gemini; khi đó `AI_MODEL` phải là model Gemini tương ứng.
+
 ## Database
 
 Bot sẽ thử kết nối MySQL khi khởi động. Nếu MySQL không kết nối được, bot tự động dùng SQLite tại `data/bot.sqlite`.
