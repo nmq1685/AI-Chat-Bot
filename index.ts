@@ -20,7 +20,6 @@ import {
 } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
-import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import 'libsodium-wrappers';
 import {
@@ -29,18 +28,13 @@ import {
   entersState,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
-import { ensureConversationTables } from './database';
+import { ensureConversationTables, pool } from './database';
+export { pool } from './database';
 
 dotenv.config();
 
 const TOKEN = process.env.TOKEN!;
 const PREFIX = process.env.PREFIX!;
-const DB_HOST = process.env.DB_HOST!;
-const DB_USER = process.env.DB_USER!;
-const DB_PASSWORD = process.env.DB_PASSWORD!;
-const DB_NAME = process.env.DB_NAME!;
-const DB_PORT = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined;
-
 const ffmpegPath = 'ffmpeg';
 
 interface ICommand {
@@ -71,20 +65,14 @@ const client = new Client({
 });
 client.commands = new Collection<string, ICommand>();
 
-export const pool = mysql.createPool({
-  host: DB_HOST,
-  user: DB_USER,
-  password: DB_PASSWORD,
-  database: DB_NAME,
-  port: DB_PORT,
-});
-
 async function ensureDatabaseTables(): Promise<void> {
   try {
+    await pool.initialize();
+    const isSqlite = pool.dialect === 'sqlite';
     const createUsersTableQuery = `
       CREATE TABLE IF NOT EXISTS users (
-        user_id VARCHAR(255) PRIMARY KEY,
-        username VARCHAR(255),
+        user_id ${isSqlite ? 'TEXT' : 'VARCHAR(255)'} PRIMARY KEY,
+        username ${isSqlite ? 'TEXT' : 'VARCHAR(255)'},
         status ENUM('đồng ý', 'từ chối') NOT NULL
       )
     `;
@@ -93,8 +81,8 @@ async function ensureDatabaseTables(): Promise<void> {
 
     const createBalanceTableQuery = `
       CREATE TABLE IF NOT EXISTS balance (
-        user_id VARCHAR(255) PRIMARY KEY,
-        balance INT DEFAULT 0
+        user_id ${isSqlite ? 'TEXT' : 'VARCHAR(255)'} PRIMARY KEY,
+        balance ${isSqlite ? 'INTEGER' : 'INT'} DEFAULT 0
       )
     `;
     await pool.execute(createBalanceTableQuery);
@@ -102,10 +90,10 @@ async function ensureDatabaseTables(): Promise<void> {
 
     const createPackagesTableQuery = `
       CREATE TABLE IF NOT EXISTS packages (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id VARCHAR(255),
-        package_name VARCHAR(255),
-        package_price INT
+        id ${isSqlite ? 'INTEGER PRIMARY KEY AUTOINCREMENT' : 'INT AUTO_INCREMENT PRIMARY KEY'},
+        user_id ${isSqlite ? 'TEXT' : 'VARCHAR(255)'},
+        package_name ${isSqlite ? 'TEXT' : 'VARCHAR(255)'},
+        package_price ${isSqlite ? 'INTEGER' : 'INT'}
       )
     `;
     await pool.execute(createPackagesTableQuery);
@@ -113,8 +101,8 @@ async function ensureDatabaseTables(): Promise<void> {
 
     const createUserGuildsTableQuery = `
       CREATE TABLE IF NOT EXISTS user_guilds (
-        user_id VARCHAR(255) NOT NULL,
-        guild_id VARCHAR(255) NOT NULL,
+        user_id ${isSqlite ? 'TEXT' : 'VARCHAR(255)'} NOT NULL,
+        guild_id ${isSqlite ? 'TEXT' : 'VARCHAR(255)'} NOT NULL,
         PRIMARY KEY (user_id, guild_id)
       )
     `;
@@ -139,9 +127,12 @@ async function checkUserAgreement(userId: string): Promise<boolean> {
 
 async function setUserAgreement(userId: string, status: string): Promise<void> {
   try {
+    await pool.initialize();
     await pool.execute(
-      'INSERT INTO users (user_id, status) VALUES (?, ?) ON DUPLICATE KEY UPDATE status = ?',
-      [userId, status, status]
+      pool.dialect === 'sqlite'
+        ? 'INSERT INTO users (user_id, status) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET status = excluded.status'
+        : 'INSERT INTO users (user_id, status) VALUES (?, ?) ON DUPLICATE KEY UPDATE status = ?',
+      pool.dialect === 'sqlite' ? [userId, status] : [userId, status, status]
     );
   } catch (error) {
     console.error('Lỗi lưu sự đồng ý của người dùng:', error);
@@ -150,9 +141,12 @@ async function setUserAgreement(userId: string, status: string): Promise<void> {
 
 async function setUserGuild(userId: string, guildId: string): Promise<void> {
   try {
+    await pool.initialize();
     await pool.execute(
-      'INSERT INTO user_guilds (user_id, guild_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE guild_id = ?',
-      [userId, guildId, guildId]
+      pool.dialect === 'sqlite'
+        ? 'INSERT INTO user_guilds (user_id, guild_id) VALUES (?, ?) ON CONFLICT(user_id, guild_id) DO UPDATE SET guild_id = excluded.guild_id'
+        : 'INSERT INTO user_guilds (user_id, guild_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE guild_id = ?',
+      pool.dialect === 'sqlite' ? [userId, guildId] : [userId, guildId, guildId]
     );
   } catch (error) {
     console.error('Error updating user_guilds table:', error);
