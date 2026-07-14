@@ -2,7 +2,7 @@
 
 ## AI provider
 
-Lệnh `/chat` hỗ trợ OpenAI và Google Gemini. Chọn provider và model trong `.env`:
+Lệnh `/chat` (hoặc lệnh prefix `!c`/`!chat`) hỗ trợ OpenAI và Google Gemini. Chọn provider và model trong `.env`:
 
 ```env
 AI_PROVIDER=google

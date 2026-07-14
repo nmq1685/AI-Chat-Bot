@@ -14,6 +14,7 @@ const DEFAULT_MODELS: Record<AiProvider, string> = {
   openai: 'gpt-5',
   google: 'gemini-2.0-flash',
 };
+const DISCORD_MESSAGE_LIMIT = 2000;
 
 export default {
   data: new SlashCommandBuilder()
@@ -23,6 +24,7 @@ export default {
       option.setName('content').setDescription('Nội dung chat').setRequired(true)
     ),
   name: 'chat',
+  aliases: ['c'],
   async execute(interactionOrMessage: ChatInputCommandInteraction | Message, args?: string[]) {
     const isSlash = interactionOrMessage instanceof ChatInputCommandInteraction;
     const userId = isSlash
@@ -61,10 +63,20 @@ export default {
       await addChatMessageToHistory(userId, 'bot', replyText, pool);
 
       const finalReply = replyText.trim() || 'Không nhận được phản hồi từ AI API.';
+      const replyChunks = splitDiscordMessage(finalReply);
       if (isSlash) {
-        await interactionOrMessage.editReply(finalReply);
+        await interactionOrMessage.editReply(replyChunks[0]);
+        for (const chunk of replyChunks.slice(1)) {
+          await interactionOrMessage.followUp(chunk);
+        }
       } else {
-        await loadingMessage.edit(finalReply);
+        await loadingMessage.edit(replyChunks[0]);
+        for (const chunk of replyChunks.slice(1)) {
+          if (!loadingMessage.channel.isSendable()) {
+            throw new Error('Không thể gửi phần tiếp theo của phản hồi vào kênh này.');
+          }
+          await loadingMessage.channel.send(chunk);
+        }
       }
     } catch (error) {
       console.error('Lỗi thực thi lệnh chat:', error);
@@ -79,6 +91,40 @@ export default {
     }
   },
 };
+
+function splitDiscordMessage(content: string): string[] {
+  if (content.length <= DISCORD_MESSAGE_LIMIT) {
+    return [content];
+  }
+
+  const chunks: string[] = [];
+  let remaining = content;
+
+  while (remaining.length > DISCORD_MESSAGE_LIMIT) {
+    let splitEnd = DISCORD_MESSAGE_LIMIT;
+    const newlineIndex = remaining.lastIndexOf('\n', DISCORD_MESSAGE_LIMIT - 1);
+
+    if (newlineIndex > 0) {
+      splitEnd = newlineIndex + 1;
+    } else {
+      for (let index = DISCORD_MESSAGE_LIMIT - 1; index > 0; index--) {
+        if (/\s/.test(remaining[index])) {
+          splitEnd = index + 1;
+          break;
+        }
+      }
+    }
+
+    chunks.push(remaining.slice(0, splitEnd));
+    remaining = remaining.slice(splitEnd);
+  }
+
+  if (remaining) {
+    chunks.push(remaining);
+  }
+
+  return chunks;
+}
 
 async function getChatResponse(prompt: string): Promise<string> {
   const provider = getProvider();

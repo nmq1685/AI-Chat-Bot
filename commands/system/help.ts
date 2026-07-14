@@ -23,7 +23,7 @@ export default {
       .setTitle('📚 Danh sách lệnh')
       .setDescription('Dưới đây là các lệnh bạn có thể sử dụng:')
       .addFields(
-        { name: '🤖 Chat', value: `\`${prefix}chat\` hoặc \`/chat\` - Chat với AI`, inline: false },
+        { name: '🤖 Chat', value: `\`${prefix}chat\` (alias \`${prefix}c\`) hoặc \`/chat\` - Chat với AI`, inline: false },
         { name: '🗑️ Clear Memory (cm)', value: `\`${prefix}cm\` hoặc \`/clear_memory\` - Xóa lịch sử cuộc trò chuyện khỏi cơ sở dữ liệu`, inline: false },
         { name: '❓ Help', value: `\`${prefix}help\` hoặc \`/help\` - Hiển thị danh sách các lệnh`, inline: false }
       )
